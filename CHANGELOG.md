@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-22
+
 ### Added
 
 - The tasks of a self-hosted Leantime 3.x in Gladys, through its JSON-RPC API
@@ -24,3 +26,6 @@ the notes of the version's GitHub Release.
   optionally for one assignee.
 - "Test the connection" action, texts and documentation in English, French,
   German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-leantime/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-leantime/releases/tag/v1.0.0
