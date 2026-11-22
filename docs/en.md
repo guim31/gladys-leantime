@@ -75,7 +75,8 @@ the tasks to finish by tonight (10 at most), the overdue ones first with their
 date, then today's, with their project. Choose a project device in the widget
 settings to see only its tasks, and give a name in **Only the tasks of** to see
 only one person's. When nothing is due, the widget says so and gives the next
-milestone. Projects carry the name given in Gladys once their device is added.
+milestone, unless **Show the next milestone when nothing is due** is
+unticked. Projects carry the name given in Gladys once their device is added.
 
 The counters can also go on the dashboard like any device feature.
 

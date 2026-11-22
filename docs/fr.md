@@ -78,7 +78,8 @@ liste des tâches à finir ce soir (10 au plus), celles en retard d'abord avec
 leur date, puis celles du jour, avec leur projet. Choisissez un appareil projet
 dans les réglages du widget pour ne voir que ses tâches, et un nom dans
 **Seulement les tâches de** pour ne voir que celles d'une personne. Quand rien
-n'est dû, le widget le dit et donne le prochain jalon. Les projets portent le
+n'est dû, le widget le dit et donne le prochain jalon, sauf si **Afficher le prochain jalon quand rien
+n'est dû** est décoché. Les projets portent le
 nom donné dans Gladys une fois leur appareil ajouté.
 
 Les compteurs peuvent aussi aller sur le tableau de bord comme toute

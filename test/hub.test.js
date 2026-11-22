@@ -21,6 +21,9 @@ import {
   instanceId,
   projectId,
 } from './helpers/world.js';
+import { fixture } from './helpers/fakeLeantime.js';
+
+const fixtureProjects = () => fixture('real-projects').result;
 
 async function world(t, options = {}) {
   const w = await createWorld(options);
@@ -114,7 +117,7 @@ test('the calls: three per reading, the statuses of each project once an hour', 
     ]),
     [
       ['Projects.Projects.getAll', {}],
-      ['Tickets.Tickets.getAll', { searchCriteria: { statusType: 'NEW,INPROGRESS' } }],
+      ['Tickets.Tickets.getAll', { searchCriteria: { statusType: 'NOT_DONE' } }],
       [
         'Tickets.Tickets.getAll',
         // Local midnight in Paris, without milliseconds (refused by Leantime).
@@ -417,7 +420,13 @@ test('the state under /data holds no secret and no name', async (t) => {
   const w = await world(t);
   await w.hub.store.flush();
   const saved = await readFile(join(w.dataDir, 'leantime-state.json'), 'utf8');
-  assert.deepEqual(Object.keys(JSON.parse(saved)), ['scope', 'readAt', 'assigned', 'sent']);
+  assert.deepEqual(Object.keys(JSON.parse(saved)), [
+    'scope',
+    'readAt',
+    'assigned',
+    'projects',
+    'sent',
+  ]);
   assert.doesNotMatch(saved, /lt_|FakeKey|Sortir|Maison|Ada/);
   assert.deepEqual(JSON.parse(saved).assigned, { 9: '4', 5: '1', 3: '4', 2: '1', 1: '1' });
 });
@@ -436,4 +445,34 @@ test('a device created in Gladys gets its states again', async (t) => {
   const before = w.fake.states.length;
   await w.fake.deviceCreated(w.fake.discoveredDevices[0]);
   assert.ok(w.fake.states.length >= before + 5);
+});
+
+test('another key, or a project newly given to the key: its tasks are not news', async (t) => {
+  const server = new FakeLeantime();
+  const hidden = server.tickets.filter((item) => item.projectId === 2);
+  server.projects = server.projects.filter((project) => project.id !== 2);
+  server.tickets = server.tickets.filter((item) => item.projectId !== 2);
+  const w = await world(t, { server });
+  server.projects = fixtureProjects();
+  server.tickets.push(...hidden);
+  w.clock.advance(60_000);
+  await w.hub.poll();
+  assert.deepEqual(events(w), [], 'Jardin was not visible at the previous reading');
+  server.apiKey = 'lt_Other_Key';
+  await w.fake.configUpdated({ ...BASE_CONFIG, api_key: 'lt_Other_Key' });
+  w.server.update(6, { editorId: 1, editorFirstname: 'Ada', editorLastname: 'Admin' });
+  w.clock.advance(60_000);
+  await w.hub.poll();
+  assert.deepEqual(events(w), ['task_assigned:Ranger le grenier'], 'only the later change');
+});
+
+test('read today answers from a fresh reading; a project created since is found', async (t) => {
+  const w = await world(t);
+  const before = w.server.requests.length;
+  await w.fake.sceneAction('read_today', {});
+  assert.equal(w.server.requests.length, before, 'read less than a minute ago');
+  w.server.projects.push({ ...w.server.projects[0], id: 3, name: 'Atelier' });
+  const created = await w.fake.sceneAction('create_task', { title: 'Établi', project: 'Atelier' });
+  assert.equal(created.success, true, JSON.stringify(created));
+  assert.equal(created.data.outputs.project_name, 'Atelier');
 });

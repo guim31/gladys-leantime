@@ -13,6 +13,7 @@
 // (Architecture adapted from guim31/gladys-openproject.)
 // -----------------------------------------------------------------------------
 
+import { createHash } from 'node:crypto';
 import { DEVICE_TRANSPORTS, createLogger } from '@gladysassistant/integration-sdk';
 import { hostOf, isLocalAddress } from './config.js';
 import { buildDevice, featureStates, instanceIds, projectIds } from './devices.js';
@@ -74,6 +75,12 @@ const MAX_NAMES = 10;
 // Leantime's column for a title is a VARCHAR(255).
 const MAX_TITLE = 255;
 const MAX_DESCRIPTION = 5_000;
+// "Assigned" events sent by one reading at most; the others are taken as known.
+const MAX_ASSIGNED_EVENTS = 20;
+// "Read today's tasks" answers from a reading this recent, without reading again.
+const FRESH_MS = 60_000;
+// …and waits at most this long for a new one (the scene action has 20 s).
+const READ_WAIT_MS = 12_000;
 
 const EMPTY = () => ({ projects: [], tickets: [] });
 
@@ -99,7 +106,7 @@ export class LeantimeHub {
     this.config = null;
     this.client = null;
     this.reset();
-    this.saved = { scope: null, readAt: 0, assigned: {}, sent: [] };
+    this.saved = { scope: null, readAt: 0, assigned: {}, projects: [], sent: [] };
     this.connection = null;
     this.devicesSignature = null;
     this.widgetSignature = null;
@@ -161,6 +168,7 @@ export class LeantimeHub {
       scope: typeof saved.scope === 'string' ? saved.scope : null,
       readAt: Number.isFinite(saved.readAt) ? saved.readAt : 0,
       assigned,
+      projects: Array.isArray(saved.projects) ? saved.projects.map(String) : [],
       sent: Array.isArray(saved.sent) ? saved.sent : [],
     };
     await this.reconfigure(config);
@@ -284,7 +292,8 @@ export class LeantimeHub {
   async fetch(client, now) {
     const projects = parseProjects(await client.projects());
     const day = localDay(now, this.timeZone);
-    const open = await client.tickets({ statusType: 'NEW,INPROGRESS' });
+    // NOT_DONE: every status but the "Done" ones, "don't report" (NONE) included.
+    const open = await client.tickets({ statusType: 'NOT_DONE' });
     const done = await client.tickets({
       statusType: 'DONE',
       // Leantime refuses milliseconds (-32602 "must be an ISO 8601 datetime").
@@ -590,6 +599,9 @@ export class LeantimeHub {
       this.data.tickets
         .filter((item) => item.open && !item.milestone && item.dueAt !== null)
         .map((item) => [item.id, item.name, item.dueAt, item.projectId, item.assignee]),
+      this.data.tickets
+        .filter((item) => item.milestone && item.open)
+        .map((item) => [item.id, item.name, item.dueAt, item.projectId]),
       localDay(this.now(), this.timeZone).start,
     ]);
     if (signature !== this.widgetSignature) {
@@ -610,7 +622,10 @@ export class LeantimeHub {
    *     already over fires nothing.
    */
   async fireEvents(now) {
-    const scope = this.config.url;
+    // Another key on the same instance sees other projects: its tasks are not news.
+    const key = createHash('sha256').update(this.config.apiKey).digest('hex').slice(0, 12);
+    const scope = `${this.config.url}#${key}`;
+    const projects = this.data.projects.map((project) => project.id);
     const current = Object.fromEntries(
       this.data.tickets
         .filter((item) => item.open && !item.milestone && item.assigneeId)
@@ -618,11 +633,14 @@ export class LeantimeHub {
     );
     if (this.saved.scope !== scope || this.saved.readAt === 0) {
       // First reading of this instance: what already passed is not news.
-      this.saved = { scope, readAt: now, assigned: current, sent: [] };
+      this.saved = { scope, readAt: now, assigned: current, projects, sent: [] };
       this.store.save(this.saved);
       return;
     }
     const known = this.saved.assigned;
+    // A project newly visible (given to the key since): its tasks are not news either.
+    const seen = new Set(this.saved.projects);
+    let budget = MAX_ASSIGNED_EVENTS;
     // Overdue events already sent at the moment where Gladys refused one.
     const sent = new Set(this.saved.sent);
     const eventId = (event) => `${event.item.id}:${event.at}`;
@@ -636,6 +654,10 @@ export class LeantimeHub {
       if (!item.open || item.milestone || !item.assigneeId || known[item.id] === item.assigneeId) {
         continue;
       }
+      if (!seen.has(item.projectId) || budget <= 0) {
+        continue;
+      }
+      budget -= 1;
       if (!(await this.fire(TRIGGERS.ASSIGNED, this.eventData(item)))) {
         if (known[item.id] === undefined) {
           delete kept[item.id];
@@ -677,6 +699,7 @@ export class LeantimeHub {
       scope,
       readAt: Math.max(readAt, this.saved.readAt),
       assigned: kept,
+      projects,
       sent: sentNow,
     };
     this.store.save(this.saved);
@@ -737,15 +760,6 @@ export class LeantimeHub {
       throw this.fail('notConfigured');
     }
     return this.client;
-  }
-
-  /** Read now and wait for it; a failed reading is the command's error. */
-  async readNow() {
-    this.requireClient();
-    await this.poll();
-    if (this.error) {
-      throw this.explain(new LeantimeError(this.error.kind, this.error.message));
-    }
   }
 
   /** Read again now, and wait for it a little (the answer should not lag). */
@@ -822,7 +836,15 @@ export class LeantimeHub {
         this.readAt !== 0 && !this.error
           ? this.data.projects
           : parseProjects(await client.projects());
-      project = this.findProject(projects, projectQuery);
+      try {
+        project = this.findProject(projects, projectQuery);
+      } catch (err) {
+        if (projects !== this.data.projects || String(projectQuery ?? '').trim() === '') {
+          throw err;
+        }
+        // A project created in Leantime since the last reading.
+        project = this.findProject(parseProjects(await client.projects()), projectQuery);
+      }
       id = await client.addTicket({
         projectId: project.id,
         headline: title,
@@ -848,7 +870,22 @@ export class LeantimeHub {
    * the instance or one project (id or name), optionally of one assignee.
    */
   async today({ project: projectQuery, assignee } = {}) {
-    await this.readNow();
+    this.requireClient();
+    if (this.error || this.readAt === 0 || this.now() - this.readAt > FRESH_MS) {
+      let timer;
+      await Promise.race([
+        this.poll().catch(() => {}),
+        new Promise((resolve) => {
+          timer = setTimeout(resolve, READ_WAIT_MS);
+        }),
+      ]);
+      clearTimeout(timer);
+    }
+    if (this.error || this.readAt === 0) {
+      throw this.explain(
+        new LeantimeError(this.error?.kind ?? ERROR_KINDS.UNREACHABLE, this.error?.message ?? ''),
+      );
+    }
     let projectId = null;
     if (String(projectQuery ?? '').trim() !== '') {
       const { item, reason } = findByIdOrName(this.data.projects, projectQuery);

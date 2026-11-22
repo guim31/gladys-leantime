@@ -8,7 +8,7 @@
 //
 // Budget (8 components, 2 texts): two tiles (due today, overdue) and one
 // status list (overdue first, then today's, with their project). Nothing
-// left: a sentence and the next milestone. The figures are values, not bound
+// left: a sentence and the next milestone (a setting hides it). The figures are values, not bound
 // to device features, so the widget works before any device is added. No
 // button: closing a task depends on the statuses of each project.
 // -----------------------------------------------------------------------------
@@ -112,7 +112,7 @@ async function get(hub, { settings, language = 'en' }) {
   );
   if (summary.agenda.length === 0) {
     components.push({ type: 'text', variant: 'body', text: t(TEXT.nothing, language) });
-    if (summary.nextMilestone) {
+    if (summary.nextMilestone && settings?.show_milestone !== false) {
       const when = formatDay(summary.nextMilestone.dueAt, { language, timeZone: hub.timeZone });
       components.push({
         type: 'status',

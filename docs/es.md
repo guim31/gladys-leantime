@@ -78,7 +78,8 @@ las tareas para esta noche (10 como máximo), primero las atrasadas con su
 fecha, luego las de hoy, con su proyecto. Elija un dispositivo de proyecto en
 la configuración del widget para ver solo sus tareas, e indique un nombre en
 **Solo las tareas de** para ver solo las de una persona. Cuando nada vence, el
-widget lo dice y da el próximo hito. Los proyectos llevan el nombre dado en
+widget lo dice y da el próximo hito, salvo si **Mostrar el próximo hito cuando nada
+vence** está desmarcado. Los proyectos llevan el nombre dado en
 Gladys una vez añadido su dispositivo.
 
 Los contadores también pueden ir al panel como cualquier función de

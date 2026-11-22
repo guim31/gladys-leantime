@@ -115,3 +115,13 @@ test('ten rows at most', async (t) => {
   assert.equal(rows(data).length, 10);
   assert.equal(ofType(data, 'value')[0].value, 14);
 });
+
+test('the next milestone can be hidden', async (t) => {
+  const w = await world(t);
+  for (const id of [1, 2, 3, 8]) {
+    w.server.update(id, { status: 0 });
+  }
+  await w.hub.poll();
+  const data = await content(w, { show_milestone: false });
+  assert.equal(ofType(data, 'status').length, 0);
+});

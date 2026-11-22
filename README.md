@@ -63,13 +63,13 @@ links it from the Configuration screen.
 The integration uses the JSON-RPC 2.0 API of Leantime (`POST /api/jsonrpc`),
 with the API key in the `x-api-key` header:
 
-| Method                                                              | Use                                     |
-| ------------------------------------------------------------------- | --------------------------------------- |
-| `leantime.rpc.Projects.Projects.getAll`                             | the projects, to follow some by name    |
-| `leantime.rpc.Tickets.Tickets.getAll` (`statusType` NEW,INPROGRESS) | the open tickets: counters, events      |
-| `leantime.rpc.Tickets.Tickets.getAll` (DONE, modified today)        | the tasks done today                    |
-| `leantime.rpc.Tickets.Tickets.getStatusLabels` (once an hour)       | which statuses of a project mean "done" |
-| `leantime.rpc.Tickets.Tickets.addTicket`                            | create a task                           |
+| Method                                                        | Use                                     |
+| ------------------------------------------------------------- | --------------------------------------- |
+| `leantime.rpc.Projects.Projects.getAll`                       | the projects, to follow some by name    |
+| `leantime.rpc.Tickets.Tickets.getAll` (`statusType` NOT_DONE) | the open tickets: counters, events      |
+| `leantime.rpc.Tickets.Tickets.getAll` (DONE, modified today)  | the tasks done today                    |
+| `leantime.rpc.Tickets.Tickets.getStatusLabels` (once an hour) | which statuses of a project mean "done" |
+| `leantime.rpc.Tickets.Tickets.addTicket`                      | create a task                           |
 
 Leantime is read on a timer of the container; the devices are published with
 `should_poll: false`. States are published only when they change, and every 12

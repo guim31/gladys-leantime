@@ -132,7 +132,10 @@ export class FakeLeantime {
       if (!types.every((type) => ['NEW', 'INPROGRESS', 'DONE', 'NOT_DONE'].includes(type))) {
         return error('real-error-invalid-params');
       }
-      found = found.filter((item) => types.includes(this.labels[String(item.status)].statusType));
+      found = found.filter((item) => {
+        const type = this.labels[String(item.status)].statusType;
+        return types.includes(type) || (types.includes('NOT_DONE') && type !== 'DONE');
+      });
     }
     if (criteria.modifiedAfter) {
       if (
@@ -148,7 +151,8 @@ export class FakeLeantime {
         });
       }
       const after = Date.parse(criteria.modifiedAfter);
-      found = found.filter((item) => Date.parse(`${item.modified.replace(' ', 'T')}Z`) > after);
+      // The real server compares with `>=`.
+      found = found.filter((item) => Date.parse(`${item.modified.replace(' ', 'T')}Z`) >= after);
     }
     return result(found);
   }

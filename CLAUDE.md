@@ -276,7 +276,7 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   ne renvoie que les projets attribués (tous pour une clé administrateur). Une clé Éditeur ne peut pas lire
   `Users.getAll` (-32001) : pas d'e-mail des assignés, d'où le filtre du déclencheur par nom affiché.
 - `Tickets.getAll({ searchCriteria })` renvoie tous les tickets des projets visibles, jalons compris
-  (`type: "milestone"`), archivés exclus. Filtres serveur `statusType` (`NEW,INPROGRESS`, `DONE`) et
+  (`type: "milestone"`), archivés exclus. Filtres serveur `statusType` (`NOT_DONE` = tout sauf DONE, y compris le type « ne pas compter » NONE ; `DONE`) et
   `modifiedAfter` (#3700) : **`modifiedAfter` refuse les millisecondes** (`-32602 must be an ISO 8601
 datetime`), donc `toISOString()` sans `.000`. Un Leantime plus ancien ignore ces filtres : le code
   reclasse toujours d'après `Tickets.getStatusLabels(projectId)` (`statusType` DONE ; par défaut 0 Done et

@@ -81,7 +81,8 @@ Liste der bis heute Abend fälligen Aufgaben (höchstens 10), zuerst die
 den Widget-Einstellungen ein Projektgerät, um nur seine Aufgaben zu sehen, und
 gib bei **Nur die Aufgaben von** einen Namen ein, um nur die einer Person zu
 sehen. Ist nichts fällig, sagt es das Widget und nennt den nächsten
-Meilenstein. Projekte tragen den in Gladys vergebenen Namen, sobald ihr Gerät
+Meilenstein, außer **Nächsten Meilenstein zeigen, wenn nichts fällig ist**
+ist ausgeschaltet. Projekte tragen den in Gladys vergebenen Namen, sobald ihr Gerät
 hinzugefügt ist.
 
 Die Zähler können wie jede Gerätefunktion auch aufs Dashboard.

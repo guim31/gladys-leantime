@@ -265,7 +265,7 @@
       },
       "description": {
         "en": "Reads Leantime now and reports what it finds.",
-        "fr": "Lit Leantime maintenant et indique ce qu'elle trouve.",
+        "fr": "Lit Leantime maintenant et indique ce qui a été trouvé.",
         "de": "Liest Leantime jetzt und meldet, was gefunden wurde.",
         "es": "Lee Leantime ahora e informa de lo que encuentra."
       },
@@ -767,6 +767,18 @@
             "fr": "Prénom et nom comme dans Leantime.",
             "de": "Vor- und Nachname wie in Leantime.",
             "es": "Nombre y apellido como en Leantime."
+          }
+        },
+        {
+          "key": "show_milestone",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "label": {
+            "en": "Show the next milestone when nothing is due",
+            "fr": "Afficher le prochain jalon quand rien n'est dû",
+            "de": "Nächsten Meilenstein zeigen, wenn nichts fällig ist",
+            "es": "Mostrar el próximo hito cuando nada vence"
           }
         }
       ]

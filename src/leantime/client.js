@@ -164,7 +164,7 @@ export class LeantimeClient {
 
   /**
    * Tickets (tasks, bugs, subtasks and milestones) of every project the key sees.
-   * `statusType` ("NEW,INPROGRESS", "DONE") and `modifiedAfter` (ISO 8601)
+   * `statusType` ("NOT_DONE", "DONE") and `modifiedAfter` (ISO 8601)
    * filter on the server since Leantime 3.7 or so; an older one ignores them,
    * so the caller sorts the answer again.
    */

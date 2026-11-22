@@ -35,8 +35,9 @@ the integration handles:
   only to the configured Leantime address (`x-api-key` header), and never
   logged;
 - under `/data`, only `leantime-state.json`: the configured address, the time
-  of the last reading, the user number assigned to each open task, and the
-  overdue events already sent (no secret, no title, no name);
+  of the last reading, a short SHA-256 fingerprint of the key (to tell keys
+  apart), the project numbers seen, the user number assigned to each open
+  task, and the overdue events already sent (no secret, no title, no name);
 - network: outgoing HTTP(S) requests to the configured Leantime address only.
   With "Accept self-signed certificates" ticked, the certificate of that
   address is not verified.
