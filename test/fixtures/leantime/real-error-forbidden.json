@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32001,
+    "message": "You are not allowed to perform this action.",
+    "data": null
+  },
+  "id": 1
+}

@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "msg": "notifications.ticket_save_error_no_headline",
+    "type": "error"
+  },
+  "id": 1
+}

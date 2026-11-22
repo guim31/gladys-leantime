@@ -1,177 +1,775 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Leantime",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Leantime projects: open, due today and overdue tasks, milestones, tasks created from a scene.",
+    "fr": "Projets Leantime : tâches ouvertes, du jour, en retard, jalons, tâches créées par une scène.",
+    "de": "Leantime-Projekte: offene, heute fällige, überfällige Aufgaben, Meilensteine, per Szene erstellt.",
+    "es": "Proyectos Leantime: tareas abiertas, de hoy, atrasadas, hitos, tareas creadas por escena."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-leantime:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-leantime/main/cover.png",
+  "categories": ["services"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your Leantime",
+        "fr": "Votre Leantime",
+        "de": "Dein Leantime",
+        "es": "Su Leantime"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "A self-hosted Leantime 3.x. Create an API key in Leantime: Company Settings, API Keys tab, Generate API Key. Give it the Editor role (to create tasks) and the projects to follow.",
+        "fr": "Un Leantime 3.x auto-hébergé. Créez une clé d'API dans Leantime : Paramètres de l'entreprise, onglet Clé d'API. Donnez-lui le rôle Éditeur (« Rédacteur en chef » dans Leantime en français, pour créer des tâches) et les projets à suivre.",
+        "de": "Ein selbst gehostetes Leantime 3.x. Erstelle einen API-Schlüssel in Leantime: Firmeneinstellungen, Reiter API Schlüssel. Gib ihm die Rolle Editor („Herausgeber“ im deutschen Leantime, um Aufgaben zu erstellen) und die zu verfolgenden Projekte.",
+        "es": "Un Leantime 3.x autoalojado. Cree una clave de API en Leantime: Ajustes de la empresa, pestaña Claves API. Dele el rol Editor (para crear tareas) y los proyectos que seguir."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://docs.leantime.io/api/usage",
+          "label": {
+            "en": "The Leantime API",
+            "fr": "L'API de Leantime",
+            "de": "Die Leantime-API",
+            "es": "La API de Leantime"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Address",
+        "fr": "Adresse",
+        "de": "Adresse",
+        "es": "Dirección"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "description": {
+        "en": "Address of Leantime, as in the browser, with https:// for HTTPS and :port if not the default.",
+        "fr": "Adresse de Leantime, comme dans le navigateur, avec https:// pour le HTTPS et :port s'il n'est pas celui par défaut.",
+        "de": "Adresse von Leantime wie im Browser, mit https:// für HTTPS und :Port, falls nicht der Standard.",
+        "es": "Dirección de Leantime, como en el navegador, con https:// para HTTPS y :puerto si no es el predeterminado."
+      },
+      "placeholder": {
+        "en": "e.g. http://192.168.1.20:8080",
+        "fr": "ex. http://192.168.1.20:8080",
+        "de": "z. B. http://192.168.1.20:8080",
+        "es": "p. ej. http://192.168.1.20:8080"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key",
+        "fr": "Clé d'API",
+        "de": "API-Schlüssel",
+        "es": "Clave de API"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
+      "description": {
+        "en": "Starts with lt_. Counted: the tasks of the projects given to the key; created tasks bear its name.",
+        "fr": "Commence par lt_. Sont comptées les tâches des projets attribués à la clé ; les tâches créées portent son nom.",
+        "de": "Beginnt mit lt_. Gezählt werden die Aufgaben der dem Schlüssel zugewiesenen Projekte; erstellte Aufgaben tragen seinen Namen.",
+        "es": "Empieza por lt_. Se cuentan las tareas de los proyectos asignados a la clave; las tareas creadas llevan su nombre."
+      },
       "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "placeholder": {
+        "en": "lt_…",
+        "fr": "lt_…",
+        "de": "lt_…",
+        "es": "lt_…"
+      }
     },
     {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "key": "options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options",
+        "de": "Optionen",
+        "es": "Opciones"
+      }
+    },
+    {
+      "key": "projects",
+      "type": "string",
+      "label": {
+        "en": "Followed projects",
+        "fr": "Projets suivis",
+        "de": "Verfolgte Projekte",
+        "es": "Proyectos seguidos"
+      },
+      "description": {
+        "en": "Names or numbers separated by commas (20 at most): one device each, besides the device of the whole instance.",
+        "fr": "Noms ou numéros séparés par des virgules (20 au plus) : un appareil chacun, en plus de celui de toute l'instance.",
+        "de": "Namen oder Nummern durch Kommas getrennt (höchstens 20): je ein Gerät, zusätzlich zum Gerät der ganzen Instanz.",
+        "es": "Nombres o números separados por comas (20 como máximo): un dispositivo cada uno, además del de toda la instancia."
+      },
+      "placeholder": {
+        "en": "e.g. home, garden",
+        "fr": "ex. maison, jardin",
+        "de": "z. B. haus, garten",
+        "es": "p. ej. casa, jardin"
+      },
       "required": false,
-      "default": "celsius",
+      "default": ""
+    },
+    {
+      "key": "allow_self_signed",
+      "type": "boolean",
+      "label": {
+        "en": "Accept self-signed certificates",
+        "fr": "Accepter les certificats auto-signés",
+        "de": "Selbstsignierte Zertifikate akzeptieren",
+        "es": "Aceptar certificados autofirmados"
+      },
+      "description": {
+        "en": "For an https:// address whose certificate is self-signed. Tick only for your own server.",
+        "fr": "Pour une adresse en https:// dont le certificat est auto-signé. À cocher seulement pour votre propre serveur.",
+        "de": "Für eine https://-Adresse mit selbstsigniertem Zertifikat. Nur für deinen eigenen Server aktivieren.",
+        "es": "Para una dirección https:// con certificado autofirmado. Márquelo solo para su propio servidor."
+      },
+      "required": false,
+      "default": false
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often Leantime is read (three requests each time). Midnight is always followed on time.",
+        "fr": "Fréquence de lecture de Leantime (trois requêtes à chaque fois). Minuit est toujours suivi à l'heure.",
+        "de": "Wie oft Leantime gelesen wird (jeweils drei Anfragen). Mitternacht wird immer pünktlich verfolgt.",
+        "es": "Frecuencia de lectura de Leantime (tres solicitudes cada vez). La medianoche se sigue siempre a tiempo."
+      },
+      "required": false,
+      "default": "300",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 minutes",
+            "fr": "2 minutes",
+            "de": "2 Minuten",
+            "es": "2 minutos"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de funciones"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Names given to the features when a device is added, and texts sent to scenes.",
+        "fr": "Noms donnés aux fonctionnalités à l'ajout d'un appareil, et textes envoyés aux scènes.",
+        "de": "Namen der Funktionen beim Hinzufügen eines Geräts und an Szenen gesendete Texte.",
+        "es": "Nombres dados a las funciones al añadir un dispositivo y textos enviados a las escenas."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "description": {
+        "en": "Reads Leantime now and reports what it finds.",
+        "fr": "Lit Leantime maintenant et indique ce qu'elle trouve.",
+        "de": "Liest Leantime jetzt und meldet, was gefunden wurde.",
+        "es": "Lee Leantime ahora e informa de lo que encuentra."
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "task_assigned",
+      "label": {
+        "en": "Leantime task assigned",
+        "fr": "Tâche Leantime assignée",
+        "de": "Leantime-Aufgabe zugewiesen",
+        "es": "Tarea de Leantime asignada"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "An open task is now assigned to someone (assigned, reassigned, created or reopened with an assignee).",
+        "fr": "Une tâche ouverte est désormais assignée à quelqu'un (assignée, réassignée, créée ou rouverte avec un assigné).",
+        "de": "Eine offene Aufgabe ist jetzt jemandem zugewiesen (zugewiesen, neu zugewiesen, mit Zuweisung erstellt oder wieder geöffnet).",
+        "es": "Una tarea abierta está ahora asignada a alguien (asignada, reasignada, creada o reabierta con un asignado)."
       },
       "fields": [
         {
-          "key": "device",
+          "key": "project",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Project (empty: any)",
+            "fr": "Projet (vide : tous)",
+            "de": "Projekt (leer: alle)",
+            "es": "Proyecto (vacío: cualquiera)"
+          },
+          "description": {
+            "en": "A project device (not the Leantime instance device).",
+            "fr": "Un appareil projet (pas l'appareil de l'instance Leantime).",
+            "de": "Ein Projektgerät (nicht das Gerät der Leantime-Instanz).",
+            "es": "Un dispositivo de proyecto (no el de la instancia Leantime)."
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "assignee",
+          "type": "string",
+          "label": {
+            "en": "Assignee (empty: anyone)",
+            "fr": "Assigné à (vide : n'importe qui)",
+            "de": "Zugewiesen an (leer: alle)",
+            "es": "Asignado a (vacío: cualquiera)"
+          },
+          "description": {
+            "en": "First and last name exactly as shown in Leantime, e.g. Camille Martin.",
+            "fr": "Prénom et nom exactement comme dans Leantime, ex. Camille Martin.",
+            "de": "Vor- und Nachname genau wie in Leantime, z. B. Camille Martin.",
+            "es": "Nombre y apellido exactamente como en Leantime, p. ej. Camille Martin."
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "task",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Task",
+            "fr": "Tâche",
+            "de": "Aufgabe",
+            "es": "Tarea"
+          }
+        },
+        {
+          "key": "task_id",
+          "type": "string",
+          "label": {
+            "en": "Task number",
+            "fr": "Numéro de la tâche",
+            "de": "Aufgabennummer",
+            "es": "Número de la tarea"
+          }
+        },
+        {
+          "key": "project_name",
+          "type": "string",
+          "label": {
+            "en": "Project",
+            "fr": "Projet",
+            "de": "Projekt",
+            "es": "Proyecto"
+          }
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "label": {
+            "en": "Type (task, bug…)",
+            "fr": "Type (task, bug…)",
+            "de": "Typ (task, bug…)",
+            "es": "Tipo (task, bug…)"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "Status",
+            "fr": "Statut",
+            "de": "Status",
+            "es": "Estado"
+          }
+        },
+        {
+          "key": "assignee",
+          "type": "string",
+          "label": {
+            "en": "Assignee",
+            "fr": "Assigné à",
+            "de": "Zugewiesen an",
+            "es": "Asignado a"
+          }
+        },
+        {
+          "key": "due_date",
+          "type": "string",
+          "label": {
+            "en": "Due date (YYYY-MM-DD)",
+            "fr": "Échéance (AAAA-MM-JJ)",
+            "de": "Fälligkeit (JJJJ-MM-TT)",
+            "es": "Vencimiento (AAAA-MM-DD)"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Address of the task",
+            "fr": "Adresse de la tâche",
+            "de": "Adresse der Aufgabe",
+            "es": "Dirección de la tarea"
+          }
+        }
+      ]
+    },
+    {
+      "key": "task_overdue",
+      "label": {
+        "en": "Leantime task overdue",
+        "fr": "Tâche Leantime en retard",
+        "de": "Leantime-Aufgabe überfällig",
+        "es": "Tarea de Leantime atrasada"
+      },
+      "description": {
+        "en": "At midnight, a task due that day is still open.",
+        "fr": "À minuit, une tâche due ce jour-là est toujours ouverte.",
+        "de": "Um Mitternacht ist eine an diesem Tag fällige Aufgabe noch offen.",
+        "es": "A medianoche, una tarea que vencía ese día sigue abierta."
+      },
+      "fields": [
+        {
+          "key": "project",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Project (empty: any)",
+            "fr": "Projet (vide : tous)",
+            "de": "Projekt (leer: alle)",
+            "es": "Proyecto (vacío: cualquiera)"
+          },
+          "description": {
+            "en": "A project device (not the Leantime instance device).",
+            "fr": "Un appareil projet (pas l'appareil de l'instance Leantime).",
+            "de": "Ein Projektgerät (nicht das Gerät der Leantime-Instanz).",
+            "es": "Un dispositivo de proyecto (no el de la instancia Leantime)."
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "task",
+          "type": "string",
+          "label": {
+            "en": "Task",
+            "fr": "Tâche",
+            "de": "Aufgabe",
+            "es": "Tarea"
+          }
+        },
+        {
+          "key": "task_id",
+          "type": "string",
+          "label": {
+            "en": "Task number",
+            "fr": "Numéro de la tâche",
+            "de": "Aufgabennummer",
+            "es": "Número de la tarea"
+          }
+        },
+        {
+          "key": "project_name",
+          "type": "string",
+          "label": {
+            "en": "Project",
+            "fr": "Projet",
+            "de": "Projekt",
+            "es": "Proyecto"
+          }
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "label": {
+            "en": "Type (task, bug…)",
+            "fr": "Type (task, bug…)",
+            "de": "Typ (task, bug…)",
+            "es": "Tipo (task, bug…)"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "Status",
+            "fr": "Statut",
+            "de": "Status",
+            "es": "Estado"
+          }
+        },
+        {
+          "key": "assignee",
+          "type": "string",
+          "label": {
+            "en": "Assignee",
+            "fr": "Assigné à",
+            "de": "Zugewiesen an",
+            "es": "Asignado a"
+          }
+        },
+        {
+          "key": "due_date",
+          "type": "string",
+          "label": {
+            "en": "Due date (YYYY-MM-DD)",
+            "fr": "Échéance (AAAA-MM-JJ)",
+            "de": "Fälligkeit (JJJJ-MM-TT)",
+            "es": "Vencimiento (AAAA-MM-DD)"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Address of the task",
+            "fr": "Adresse de la tâche",
+            "de": "Adresse der Aufgabe",
+            "es": "Dirección de la tarea"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "create_task",
+      "label": {
+        "en": "Create a Leantime task",
+        "fr": "Créer une tâche Leantime",
+        "de": "Leantime-Aufgabe erstellen",
+        "es": "Crear una tarea de Leantime"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Creates a task in a project, in the name of the API key.",
+        "fr": "Crée une tâche dans un projet, au nom de la clé d'API.",
+        "de": "Erstellt eine Aufgabe in einem Projekt, im Namen des API-Schlüssels.",
+        "es": "Crea una tarea en un proyecto, a nombre de la clave de API."
+      },
+      "timeout_seconds": 20,
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "project",
+          "type": "string",
+          "label": {
+            "en": "Project name or number (empty: the first followed)",
+            "fr": "Nom ou numéro du projet (vide : le premier suivi)",
+            "de": "Projektname oder -nummer (leer: das erste verfolgte)",
+            "es": "Nombre o número del proyecto (vacío: el primero seguido)"
+          }
+        },
+        {
+          "key": "due",
+          "type": "string",
+          "label": {
+            "en": "Due date (optional)",
+            "fr": "Échéance (facultative)",
+            "de": "Fälligkeit (optional)",
+            "es": "Vencimiento (opcional)"
+          },
+          "description": {
+            "en": "2026-11-24, or +3d for in three days. Day of Gladys.",
+            "fr": "2026-11-24, ou +3d pour dans trois jours. Jour de Gladys.",
+            "de": "2026-11-24, oder +3d für in drei Tagen. Tag von Gladys.",
+            "es": "2026-11-24, o +3d para dentro de tres días. Día de Gladys."
+          }
+        },
+        {
+          "key": "description",
+          "type": "string",
+          "label": {
+            "en": "Description (optional)",
+            "fr": "Description (facultative)",
+            "de": "Beschreibung (optional)",
+            "es": "Descripción (opcional)"
+          }
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "task",
+          "type": "string",
+          "label": {
+            "en": "Task",
+            "fr": "Tâche",
+            "de": "Aufgabe",
+            "es": "Tarea"
+          }
+        },
+        {
+          "key": "task_id",
+          "type": "string",
+          "label": {
+            "en": "Task number",
+            "fr": "Numéro de la tâche",
+            "de": "Aufgabennummer",
+            "es": "Número de la tarea"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Address of the task",
+            "fr": "Adresse de la tâche",
+            "de": "Adresse der Aufgabe",
+            "es": "Dirección de la tarea"
+          }
+        },
+        {
+          "key": "project_name",
+          "type": "string",
+          "label": {
+            "en": "Project",
+            "fr": "Projet",
+            "de": "Projekt",
+            "es": "Proyecto"
+          }
+        },
+        {
+          "key": "due_date",
+          "type": "string",
+          "label": {
+            "en": "Due date (YYYY-MM-DD)",
+            "fr": "Échéance (AAAA-MM-JJ)",
+            "de": "Fälligkeit (JJJJ-MM-TT)",
+            "es": "Vencimiento (AAAA-MM-DD)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "read_today",
+      "label": {
+        "en": "Read today's Leantime tasks",
+        "fr": "Lire les tâches Leantime du jour",
+        "de": "Heutige Leantime-Aufgaben vorlesen",
+        "es": "Leer las tareas de Leantime de hoy"
+      },
+      "description": {
+        "en": "Tasks due by tonight as a sentence, for a message or a voice announcement.",
+        "fr": "Les tâches à finir ce soir en une phrase, pour un message ou une annonce vocale.",
+        "de": "Bis heute Abend fällige Aufgaben als Satz, für eine Nachricht oder Sprachansage.",
+        "es": "Las tareas para esta noche en una frase, para un mensaje o un anuncio de voz."
+      },
+      "timeout_seconds": 20,
+      "fields": [
+        {
+          "key": "project",
+          "type": "string",
+          "label": {
+            "en": "Project name or number (empty: all)",
+            "fr": "Nom ou numéro du projet (vide : tous)",
+            "de": "Projektname oder -nummer (leer: alle)",
+            "es": "Nombre o número del proyecto (vacío: todos)"
+          }
+        },
+        {
+          "key": "assignee",
+          "type": "string",
+          "label": {
+            "en": "Assignee (empty: everyone)",
+            "fr": "Assigné à (vide : tout le monde)",
+            "de": "Zugewiesen an (leer: alle)",
+            "es": "Asignado a (vacío: todos)"
+          },
+          "description": {
+            "en": "First and last name as in Leantime.",
+            "fr": "Prénom et nom comme dans Leantime.",
+            "de": "Vor- und Nachname wie in Leantime.",
+            "es": "Nombre y apellido como en Leantime."
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Sentence",
+            "fr": "Phrase",
+            "de": "Satz",
+            "es": "Frase"
+          }
+        },
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Tasks due by tonight",
+            "fr": "Tâches à finir ce soir",
+            "de": "Bis heute Abend fällige Aufgaben",
+            "es": "Tareas para esta noche"
+          }
+        },
+        {
+          "key": "overdue",
+          "type": "number",
+          "label": {
+            "en": "Overdue tasks",
+            "fr": "Tâches en retard",
+            "de": "Überfällige Aufgaben",
+            "es": "Tareas atrasadas"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "tasks_today",
+      "label": {
+        "en": "Today's tasks",
+        "fr": "Tâches du jour",
+        "de": "Heutige Aufgaben",
+        "es": "Tareas de hoy"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Tasks due today and overdue ones (10 at most), for the instance or a project.",
+        "fr": "Tâches du jour et en retard (10 au plus), pour l'instance ou un projet.",
+        "de": "Heute fällige und überfällige Aufgaben (max. 10), für die Instanz oder ein Projekt.",
+        "es": "Tareas de hoy y atrasadas (10 como máximo), para la instancia o un proyecto."
+      },
+      "icon": "check-square",
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "required": false,
+          "label": {
+            "en": "Instance or project (empty: the instance)",
+            "fr": "Instance ou projet (vide : l'instance)",
+            "de": "Instanz oder Projekt (leer: die Instanz)",
+            "es": "Instancia o proyecto (vacío: la instancia)"
+          },
+          "description": {
+            "en": "A project device shows only the tasks of that project.",
+            "fr": "Un appareil projet n'affiche que les tâches de ce projet.",
+            "de": "Ein Projektgerät zeigt nur die Aufgaben dieses Projekts.",
+            "es": "Un dispositivo de proyecto muestra solo las tareas de ese proyecto."
+          }
+        },
+        {
+          "key": "assignee",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Only the tasks of (empty: everyone)",
+            "fr": "Seulement les tâches de (vide : tout le monde)",
+            "de": "Nur die Aufgaben von (leer: alle)",
+            "es": "Solo las tareas de (vacío: todos)"
+          },
+          "description": {
+            "en": "First and last name as in Leantime.",
+            "fr": "Prénom et nom comme dans Leantime.",
+            "de": "Vor- und Nachname wie in Leantime.",
+            "es": "Nombre y apellido como en Leantime."
+          }
+        }
+      ]
     }
   ]
 }

@@ -32,15 +32,21 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every SDK handler on the hub (tests use the same wiring)
+src/hub.js                        reading timer, devices and states, scene events, scene actions
+src/devices.js                    the instance and project devices, their features and states
+src/leantime/client.js            JSON-RPC 2.0 client (x-api-key), error kinds
+src/leantime/http.js              the one network function (node:http/https, self-signed option)
+src/leantime/model.js             projects, tickets, Leantime dates, local days, counters
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/texts.js                      texts in en/fr/de/es, ActionFailure
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js                      /data/leantime-state.json (last reading, assignees, events sent)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/en.md, fr.md, de.md, es.md   user documentation, re-hosted by Gladys (mandatory)
+test/                             node --test, against the SDK's fake Gladys and an in-memory Leantime
+test/fixtures/leantime/           real answers of leantime/leantime 3.15.3 (22/11/2026)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -259,3 +265,31 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Leantime (vérifié sur leantime/leantime 3.15.3 + MariaDB 11, 22/11/2026)
+
+- API : `POST /api/jsonrpc`, JSON-RPC 2.0, en-tête `x-api-key: lt_<user>_<secret>`. Méthode
+  `leantime.rpc.<Domaine>.<Service>.<méthode>` ; seules les méthodes annotées `@api` dans le code de Leantime
+  sont exposées. Mauvaise clé : **HTTP 401** (corps HTML ou `{"error":"Unauthorized"}`), pas une erreur JSON-RPC.
+  Droit manquant : `-32001` (HTTP 200) ; paramètre refusé : `-32602` ; méthode inconnue : `-32601`.
+- Une clé d'API est un **utilisateur à part** (`source = 'api'`), avec un rôle et des projets : `Projects.getAll`
+  ne renvoie que les projets attribués (tous pour une clé administrateur). Une clé Éditeur ne peut pas lire
+  `Users.getAll` (-32001) : pas d'e-mail des assignés, d'où le filtre du déclencheur par nom affiché.
+- `Tickets.getAll({ searchCriteria })` renvoie tous les tickets des projets visibles, jalons compris
+  (`type: "milestone"`), archivés exclus. Filtres serveur `statusType` (`NEW,INPROGRESS`, `DONE`) et
+  `modifiedAfter` (#3700) : **`modifiedAfter` refuse les millisecondes** (`-32602 must be an ISO 8601
+datetime`), donc `toISOString()` sans `.000`. Un Leantime plus ancien ignore ces filtres : le code
+  reclasse toujours d'après `Tickets.getStatusLabels(projectId)` (`statusType` DONE ; par défaut 0 Done et
+  -1 Archived), lu une fois par heure et par projet.
+- **Dates** : `dateToFinish` (tâche) et `editTo` (jalon) sont des `YYYY-MM-DD HH:MM:SS` en UTC, mais deux
+  écrivains coexistent : un jour nu envoyé par l'API (ou l'appli mobile) est stocké à minuit **tel quel**,
+  l'appli web convertit la date et l'heure locales de l'utilisateur en UTC (`24/11 18:00` → `20:00`). Règle :
+  minuit pile = ce jour-là ; sinon conversion vers le fuseau de Gladys. `0000-00-00 00:00:00` = pas de date.
+- `addTicket({ values })` renvoie l'id (entier) ; un titre vide renvoie `{ msg, type: "error" }` en
+  **résultat** (pas en erreur). Les tickets n'ont pas de date de clôture : « terminées aujourd'hui » = statut
+  DONE et `modified` du jour.
+- Installation scriptée pour les tests : `POST /install` (email, firstname, lastname, company, install),
+  puis `php bin/leantime db:migrate`, sans quoi l'API renvoie la page HTML `install/update`. Clé créée en
+  base : ligne `zp_user` (`source='api'`, `password = password_hash(secret)`), projets dans
+  `zp_relationuserproject`.
+- Adresse d'un ticket : `<base>/tickets/showTicket/<id>` (redirige vers la connexion si besoin).
