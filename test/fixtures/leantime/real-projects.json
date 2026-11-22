@@ -1,0 +1,42 @@
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "id": 2,
+      "name": "Jardin",
+      "details": "x",
+      "clientId": null,
+      "state": null,
+      "hourBudget": "0",
+      "dollarBudget": 0,
+      "type": "project",
+      "parent": null,
+      "modified": "2026-11-22 11:45:47",
+      "start": null,
+      "end": null,
+      "clientName": null,
+      "parentId": null,
+      "parentName": null,
+      "isFavorite": 0
+    },
+    {
+      "id": 1,
+      "name": "Maison",
+      "details": "x",
+      "clientId": null,
+      "state": null,
+      "hourBudget": "0",
+      "dollarBudget": 0,
+      "type": "project",
+      "parent": null,
+      "modified": "2026-11-22 11:45:40",
+      "start": null,
+      "end": null,
+      "clientName": null,
+      "parentId": null,
+      "parentName": null,
+      "isFavorite": 0
+    }
+  ],
+  "id": 1
+}

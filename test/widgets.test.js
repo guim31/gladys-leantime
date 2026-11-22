@@ -1,77 +1,127 @@
+// -----------------------------------------------------------------------------
+// The "today's tasks" widget: content within the core budget (validated by
+// the SDK's validateWidgetContent), the instance and one-project views, one
+// assignee, and the degraded states.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { BASE_CONFIG, PROJECTS, createWorld, instanceId, projectId } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+async function world(t, options = {}) {
+  const w = await createWorld(options);
+  t.after(() => w.app.stop());
+  return w;
+}
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+async function content(w, settings = {}, language = 'en') {
+  const ack = await w.fake.widgetGet('tasks_today', {
+    settings,
+    language,
+    units: 'metric',
+  });
+  assert.equal(ack.success, true, ack.error);
+  const { content: tree } = ack.data;
+  assert.deepEqual(validateWidgetContent(tree), [], 'within the core vocabulary and budget');
+  return tree;
+}
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
+const ofType = (data, type) => data.components.filter((component) => component.type === type);
+const rows = (data) =>
+  ofType(data, 'status')[0].items.map((row) => [row.label, row.value, row.color]);
 
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
-  }
-});
-
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('the instance: tiles, the tasks of the day with their project', async (t) => {
+  const w = await world(t);
+  const data = await content(w);
+  assert.ok(data.components.length <= 8);
+  assert.deepEqual(
+    ofType(data, 'value').map((tile) => tile.value),
+    [2, 2],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
+  assert.deepEqual(rows(data), [
+    ['Tailler la haie', 'Fri 20 Nov · Jardin', 'danger'],
+    ['Sortir les poubelles', 'Sat 21 Nov · Maison', 'danger'],
+    ['Payer la cantine', 'Today · Maison', 'neutral'],
+    ['Arroser les plantes', 'Today · Maison', 'neutral'],
+  ]);
+  assert.equal(ofType(data, 'button').length, 0);
 });
 
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
+test('the instance device chosen explicitly is the same view', async (t) => {
+  const w = await world(t);
+  const data = await content(w, { device: instanceId(w.gladys).device });
+  assert.equal(rows(data).length, 4);
+});
+
+test('one project, one assignee, in French; the name given in Gladys', async (t) => {
+  const w = await world(t);
+  const device = projectId(w.gladys, PROJECTS.MAISON).device;
+  const data = await content(w, { device, assignee: 'Ada Admin' }, 'fr');
+  assert.deepEqual(rows(data), [
+    ['Sortir les poubelles', 'sam. 21 nov.', 'danger'],
+    ['Payer la cantine', "Aujourd'hui", 'neutral'],
+  ]);
+  assert.deepEqual(
+    ofType(data, 'value').map((tile) => [tile.label, tile.value]),
+    [
+      ["Aujourd'hui", 1],
+      ['En retard', 1],
+    ],
+  );
+  const created = w.fake.discoveredDevices.find((item) => item.external_id === device);
+  await w.fake.deviceCreated({ ...created, name: 'Travaux maison' });
+  const named = await content(w);
+  assert.equal(rows(named)[1][1], 'Sat 21 Nov · Travaux maison');
+});
+
+test('nothing due: a sentence and the next milestone', async (t) => {
+  const w = await world(t);
+  for (const id of [1, 2, 3, 8]) {
+    w.server.update(id, { status: 0 });
+  }
+  await w.hub.poll();
+  const data = await content(w);
+  assert.equal(ofType(data, 'text')[0].text, 'No task due today.');
+  assert.deepEqual(rows(data), [['Fin des travaux', 'Milestone · Fri 27 Nov', 'neutral']]);
+});
+
+test('degraded states: not configured, never read, no longer followed, stale', async (t) => {
+  const w = await world(t, { config: { ...BASE_CONFIG, api_key: '' } });
+  assert.match(ofType(await content(w), 'text')[0].text, /API key/);
+  await w.fake.configUpdated(BASE_CONFIG);
+  const unknown = await content(w, { device: projectId(w.gladys, '99').device });
+  assert.match(ofType(unknown, 'text')[0].text, /no longer followed/);
+  w.server.failure = Object.assign(new Error('down'), { code: 'ECONNREFUSED' });
+  await w.hub.poll();
+  const stale = await content(w);
+  assert.match(ofType(stale, 'text')[0].text, /last known tasks/);
+  assert.equal(rows(stale).length, 4);
+  const never = await world(t, { config: { ...BASE_CONFIG, url: 'http://198.51.100.7' } });
+  assert.match(ofType(await content(never), 'text')[0].text, /does not answer/);
+});
+
+test('ten rows at most', async (t) => {
+  const w = await world(t);
+  for (let i = 0; i < 12; i += 1) {
+    w.server.tickets.push({
+      ...structuredClone(w.server.find(2)),
+      id: 100 + i,
+      headline: `Tâche ${i}`,
     });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
   }
+  await w.hub.poll();
+  const data = await content(w);
+  assert.equal(rows(data).length, 10);
+  assert.equal(ofType(data, 'value')[0].value, 14);
 });
 
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
-  );
-});
-
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+test('the next milestone can be hidden', async (t) => {
+  const w = await world(t);
+  for (const id of [1, 2, 3, 8]) {
+    w.server.update(id, { status: 0 });
+  }
+  await w.hub.poll();
+  const data = await content(w, { show_milestone: false });
+  assert.equal(ofType(data, 'status').length, 0);
 });

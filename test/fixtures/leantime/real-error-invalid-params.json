@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32602,
+    "message": "statusType must be a comma separated list of: NEW, INPROGRESS, DONE, NOT_DONE.",
+    "data": {
+      "statusType": [
+        "statusType must be a comma separated list of: NEW, INPROGRESS, DONE, NOT_DONE."
+      ]
+    }
+  },
+  "id": 1
+}

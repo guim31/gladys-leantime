@@ -28,8 +28,23 @@ Gladys before reporting a problem.
 
 ## Scope
 
-In scope: the code of this repository and the Docker image it publishes.
+In scope: the code of this repository and the Docker image it publishes. What
+the integration handles:
+
+- the Leantime API key, kept by Gladys in the integration configuration, sent
+  only to the configured Leantime address (`x-api-key` header), and never
+  logged;
+- under `/data`, only `leantime-state.json`: the configured address, the time
+  of the last reading, a short SHA-256 fingerprint of the key (to tell keys
+  apart), the project numbers seen, the user number assigned to each open
+  task, and the overdue events already sent (no secret, no title, no name);
+- network: outgoing HTTP(S) requests to the configured Leantime address only.
+  With "Accept self-signed certificates" ticked, the certificate of that
+  address is not verified.
+
+The key acts with its own role on the projects given to it: prefer the Editor
+role and only the projects to follow, rather than an administrator key.
 
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and Leantime itself.

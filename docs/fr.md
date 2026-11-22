@@ -1,67 +1,176 @@
-# Template de démonstration
+# Leantime
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Les tâches de votre [Leantime](https://leantime.io) auto-hébergé dans Gladys :
+les ouvertes, celles du jour, celles en retard, celles terminées aujourd'hui et
+le prochain jalon, pour toute l'instance et pour les projets de votre choix.
+Une scène réagit quand une tâche est assignée à quelqu'un ou passe en retard,
+une autre crée « vérifier les détecteurs de fumée » chaque mois, et Gladys peut
+lire les tâches du jour chaque matin.
 
-## Ce que vous obtenez
+> **Vos retours sont bienvenus.** Cette intégration a été testée contre un vrai
+> serveur Leantime (image Docker `leantime/leantime` 3.15.3 avec MariaDB 11,
+> novembre 2026), pas encore à l'usage quotidien. Si quelque chose ne marche pas
+> comme décrit, dites-le sur le [forum Gladys](https://community.gladysassistant.com)
+> ou dans les [issues](https://github.com/guim31/gladys-leantime/issues).
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Ce qu'il faut
 
-## Configuration
+- Gladys Assistant 5.1.0 ou plus récent.
+- Un **Leantime 3.x** que Gladys peut joindre sur votre réseau.
+- Une **clé d'API** de Leantime : dans Leantime, **Paramètres de l'entreprise**
+  → onglet **Clé d'API** → générer une clé (un administrateur peut le faire).
+  Donnez-lui le rôle **Éditeur** (« Rédacteur en chef » dans Leantime en
+  français), pour qu'elle puisse créer des tâches, et les projets à suivre.
+  Copiez la clé (`lt_…`) : Leantime ne la montre qu'une fois.
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+La clé d'API agit comme un utilisateur à part entière : l'intégration voit les
+projets attribués à la clé (une clé administrateur les voit tous), et les
+tâches créées depuis Gladys portent son nom.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+## Mise en place
 
-## Actions
+1. Dans Gladys, **Intégrations** → installez **Leantime**.
+2. Sur l'écran **Configuration**, remplissez :
+   - **Adresse** : l'adresse de Leantime comme dans le navigateur, par exemple
+     `http://192.168.1.20:8080`, ou `https://pm.example.org` derrière un
+     reverse proxy (un préfixe comme `/leantime` est conservé) ;
+   - **Clé d'API**.
+3. Options :
+   - **Projets suivis** : noms ou numéros (le numéro figure dans l'adresse du
+     projet) séparés par des virgules, 20 au plus. Chacun a son appareil, en
+     plus de celui de toute l'instance. Vide : l'appareil de l'instance seul ;
+   - **Accepter les certificats auto-signés** : pour une adresse en `https://`
+     au certificat auto-signé, sur votre propre serveur seulement ;
+   - **Intervalle de rafraîchissement** : 1 à 10 minutes (5 par défaut).
+     Minuit est toujours suivi à l'heure, quel que soit l'intervalle ;
+   - **Langue des noms de fonctionnalités** : les noms donnés aux
+     fonctionnalités à l'ajout d'un appareil (français par défaut), et les
+     textes envoyés aux scènes.
+4. Enregistrez, puis **Tester la connexion** : elle lit Leantime et indique le
+   nombre de tâches ouvertes, de projets et de projets suivis.
+5. Dans l'onglet **Découverte**, ajoutez les appareils voulus.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+## Appareils
 
-## Scènes
+**Leantime**, pour toute l'instance (tous les projets que voit la clé), et
+**Leantime _projet_** pour chaque projet suivi, avec ces fonctionnalités :
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+| Fonctionnalité           | Ce qu'elle montre                                                               |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `Tâches ouvertes`        | les tâches dont le statut n'est pas de type « Terminé »                         |
+| `À échéance aujourd'hui` | les tâches ouvertes dont l'échéance est aujourd'hui                             |
+| `En retard`              | les tâches ouvertes dont l'échéance est passée                                  |
+| `Terminées aujourd'hui`  | les tâches d'un statut « Terminé » modifiées pour la dernière fois ce jour      |
+| `Prochain jalon`         | le jalon ouvert qui se termine le plus tôt, aujourd'hui compris ; `Aucun` sinon |
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+Une **tâche** est tout ticket qui n'est pas un jalon (tâche, bug, story,
+sous-tâche). Elle est **ouverte** tant que son statut n'est pas de type
+« Terminé » dans son projet (`Done` et `Archived` par défaut). Son jour
+d'échéance est sa **date d'échéance** ; celui d'un jalon, sa date de fin.
+« Aujourd'hui » est le jour dans le fuseau de Gladys. Leantime ne garde pas de
+date de clôture : « Terminées aujourd'hui » compte les tâches terminées
+modifiées ce jour, donc aussi une tâche finie plus tôt et retouchée aujourd'hui.
 
 ## Tableau de bord
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Le widget **Tâches du jour** montre deux tuiles (aujourd'hui, en retard) et la
+liste des tâches à finir ce soir (10 au plus), celles en retard d'abord avec
+leur date, puis celles du jour, avec leur projet. Choisissez un appareil projet
+dans les réglages du widget pour ne voir que ses tâches, et un nom dans
+**Seulement les tâches de** pour ne voir que celles d'une personne. Quand rien
+n'est dû, le widget le dit et donne le prochain jalon, sauf si **Afficher le prochain jalon quand rien
+n'est dû** est décoché. Les projets portent le
+nom donné dans Gladys une fois leur appareil ajouté.
+
+Les compteurs peuvent aussi aller sur le tableau de bord comme toute
+fonctionnalité d'appareil.
+
+## Scènes
+
+### Déclencheurs
+
+- **Tâche Leantime assignée** : une tâche ouverte est désormais assignée à
+  quelqu'un : elle vient d'être assignée ou réassignée, créée avec un assigné,
+  ou rouverte.
+- **Tâche Leantime en retard** : à minuit, une tâche due ce jour-là est
+  toujours ouverte. Une fois par tâche et par échéance.
+
+Filtres : le projet (un appareil projet, pas celui de l'instance) et, pour le
+premier, l'**assigné** : son prénom et son nom exactement comme Leantime les
+affiche (`Camille Martin`). Données transmises aux actions : la tâche, son
+numéro, son projet, son type, son statut, l'assigné, son échéance
+(`AAAA-MM-JJ`) et son adresse dans Leantime.
+
+Un changement est vu à la lecture suivante : dans l'intervalle de
+rafraîchissement. Une échéance déplacée à la main sur un jour déjà passé ne
+déclenche rien. Un redémarrage ne déclenche rien deux fois ; une tâche assignée
+pendant l'arrêt de l'intégration déclenche à son redémarrage, de même qu'un
+minuit passé depuis moins d'une heure.
+
+### Actions
+
+- **Créer une tâche Leantime** : un titre ; le projet par son nom ou son numéro
+  (vide : le premier projet suivi) ; une **échéance** facultative :
+  `2026-11-24`, ou `+3d` pour dans trois jours ; une description facultative.
+  La tâche est créée sans assigné, au statut `New`. Résultats : la tâche, son
+  numéro, son adresse, son projet, son échéance.
+- **Lire les tâches Leantime du jour** : les tâches à finir ce soir en une
+  phrase (`3 tâche(s) à finir ce soir : …. 1 en retard.`), pour toute
+  l'instance ou un projet, et pour tout le monde ou un assigné. Résultats : la
+  phrase, le nombre de tâches à finir ce soir, celui des tâches en retard.
+  Envoyez la phrase dans un message, ou faites-la dire à Gladys.
+
+Un échec (projet inconnu, date incomprise, clé sans le droit) s'affiche en
+rouge avec sa raison. Les champs acceptent les variables de scène, par exemple
+`{{triggerEvent.data.task}}`.
+
+### Idées de scènes
+
+- À 8 h, **Lire les tâches Leantime du jour** de `Camille Martin`, puis envoyer
+  la phrase sur Telegram.
+- **Tâche Leantime assignée** à `Camille Martin` : envoyer la tâche et son
+  adresse dans un message.
+- **Tâche Leantime en retard** dans le projet `Maison` : passer la lampe de
+  rappel en orange.
+- Le premier du mois, **Créer une tâche Leantime** `Vérifier les détecteurs de
+fumée` dans `Maison`, échéance `+7d`.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Leantime ne répond pas »** : vérifiez l'adresse et le port depuis la
+  machine de Gladys (l'adresse ouvre Leantime dans un navigateur).
+- **« Clé d'API refusée »** : la clé est mal recopiée (elle commence par `lt_`)
+  ou supprimée : générez-en une nouvelle.
+- **« Aucune API de Leantime à cette adresse »** : l'adresse répond, mais pas
+  avec l'API de Leantime : vérifiez le port et le préfixe. Après une mise à
+  jour de Leantime, ouvrez-le une fois dans un navigateur en administrateur :
+  il attend peut-être la mise à jour de sa base.
+- **« L'adresse redirige »** : saisissez l'adresse en `https://`.
+- **« La clé d'API n'a pas ce droit »** : donnez-lui le rôle Éditeur, et le
+  projet.
+- **« Ce Leantime est trop ancien »** : la version 3.x est nécessaire.
+- **Un projet manque** : attribuez-le à la clé dans Leantime ; un nom saisi
+  dans **Projets suivis** qui ne correspond à aucun projet est ignoré, et
+  **Tester la connexion** le signale. Les projets clos sont écartés.
+- **« Plusieurs projets portent ce nom »** : indiquez son numéro.
+- Logs : `LOG_LEVEL=debug` sur le conteneur montre chaque lecture.
+
+## Limites
+
+- Leantime est lu toutes les 1 à 10 minutes (et à minuit) : un changement dans
+  Leantime apparaît dans Gladys dans ce délai. Chaque lecture fait trois
+  requêtes (projets, tickets ouverts, tickets terminés du jour), plus une par
+  projet pour ses statuts une fois par heure. Leantime 3.7 et suivants filtrent
+  les tickets sur le serveur ; un 3.x plus ancien renvoie tous les tickets, que
+  l'intégration trie elle-même.
+- L'intégration crée des tâches ; elle ne les modifie, ne les clôt, ne les
+  assigne ni ne les supprime, et ne lit ni leurs commentaires, ni leurs
+  fichiers, ni le temps passé. L'assigné d'une tâche créée depuis Gladys se
+  choisit dans Leantime.
+- La clé d'API est gardée par Gladys dans la configuration de l'intégration et
+  envoyée seulement à l'adresse configurée. Gladys ne garde aucune donnée de
+  Leantime hors de `/data/leantime-state.json` (l'heure de la dernière lecture
+  et le numéro de l'assigné de chaque tâche ouverte, pour qu'aucun événement ne
+  parte deux fois).
+- Sans lien avec Leantime ni son éditeur. Leantime est une marque de son
+  propriétaire.
